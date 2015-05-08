@@ -1,0 +1,11 @@
+----------------------------------------------------GOALS-----------------------------------------------------
+
+
+1. Stop objects from drifting outside of map boundaries
+2. Give objects more interesting starting velocity
+3. Start objects away from player
+4. Create gradually decreasing health bar
+5. Create game over dialog that appears when health hits zero
+6. Allow game restart using dialog
+7. Create points counter that gradually increases
+8. Incorporate score into game over dialog
