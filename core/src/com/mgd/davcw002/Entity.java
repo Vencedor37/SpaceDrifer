@@ -18,6 +18,7 @@ import java.util.List;
 public class Entity {
     private Sprite baseSprite;
     private Body body;
+    private boolean toDestroy = false;
 
     public void setBody(World world, float x, float y) {
         BodyDef bodyDef = new BodyDef();
@@ -40,10 +41,13 @@ public class Entity {
         baseSprite.setY(y);
     }
 
-    public void setSize(int width, int height, int padding) {
+    public void setSize(int width, int height) {
         baseSprite.setSize(width, height);
+    }
+
+    public void initialiseFixture(int padding) {
         PolygonShape entityShape = new PolygonShape();
-        entityShape.setAsBox(width/2 - padding, height/2 - padding);
+        entityShape.setAsBox(baseSprite.getWidth()/2 - padding, baseSprite.getHeight()/2 - padding);
         FixtureDef fixtureDef = new FixtureDef();
         fixtureDef.shape = entityShape;
         fixtureDef.restitution = 2;

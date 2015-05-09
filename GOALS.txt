@@ -2,8 +2,8 @@
 
 
 1. Stop objects from drifting outside of map boundaries[DONE]
-2. Give objects more interesting starting velocity
-3. Start objects away from player
+2. Give objects more interesting starting velocity[UNNECESSARY]
+3. Start objects away from player[DONE]
 4. Create gradually decreasing health bar
 5. Create game over dialog that appears when health hits zero
 6. Allow game restart using dialog
