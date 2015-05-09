@@ -1,7 +1,7 @@
 ----------------------------------------------------GOALS-----------------------------------------------------
 
 
-1. Stop objects from drifting outside of map boundaries
+1. Stop objects from drifting outside of map boundaries[DONE]
 2. Give objects more interesting starting velocity
 3. Start objects away from player
 4. Create gradually decreasing health bar

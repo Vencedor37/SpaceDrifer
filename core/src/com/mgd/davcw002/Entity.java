@@ -64,6 +64,14 @@ public class Entity {
         return baseSprite.height/2;
     }
 
+    public float getCentreX() {
+        return (getRight() + getLeft())/2;
+    }
+
+    public float getCentreY() {
+        return (getBottom() + getTop())/2;
+    }
+
     public float getLeft() {
         return baseSprite.x;
     }
@@ -80,7 +88,7 @@ public class Entity {
         return baseSprite.y + baseSprite.height;
     }
 
-    public Vector2 getCentre() {
+    public Vector2 getRelativeCentre() {
         return new Vector2(getRelativeCentreX(), getRelativeCentreY());
     }
 
@@ -99,24 +107,26 @@ public class Entity {
     }
 
     public void checkBoundaries() {
-        float x = body.getPosition().x;
-        float y = body.getPosition().y;
-        if (x > Gdx.graphics.getWidth() || x < 0) {
-            if (x > Gdx.graphics.getWidth()) {
-                setLocation(Gdx.graphics.getWidth() - 1, this.getBaseSprite().y);
-            }
-            if (x < 0) {
-                setLocation(1, this.getBaseSprite().y);
-            }
+        float left = getLeft();
+        float bottom = getBottom();
+        float right = getRight();
+        float top = getTop();
+
+        if (left < 0) {
+            setLocation(1, top);
             reverseAxis(true);
         }
-        if (y > Gdx.graphics.getHeight() || y < 0) {
-            if (y > Gdx.graphics.getHeight()) {
-                setLocation(this.getBaseSprite().x, Gdx.graphics.getHeight() - 1);
-            }
-            if (y < 0) {
-                setLocation(this.getBaseSprite().x, 1);
-            }
+
+        if (right > Gdx.graphics.getWidth()) {
+            setLocation(Gdx.graphics.getWidth() - baseSprite.width - 1, top);
+            reverseAxis(true);
+        }
+        if (bottom > Gdx.graphics.getHeight()) {
+            setLocation(left, Gdx.graphics.getHeight() - 1 - baseSprite.height);
+            reverseAxis(false);
+        }
+        if (top < 0) {
+            setLocation(left, 1);
             reverseAxis(false);
         }
     }

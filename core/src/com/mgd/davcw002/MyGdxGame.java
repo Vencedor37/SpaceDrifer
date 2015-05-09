@@ -36,6 +36,7 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
 	private Vector2 forceToApply;
 	private List<Entity> allEntities;
 	private List<Reward> rewards;
+	private float startRange = 300;
 	
 	@Override
 	public void create () {
@@ -49,13 +50,11 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
 				Body bodyB = contact.getFixtureB().getBody();
 				int removeIndex = -9;
 				if (bodyA.equals(player.getBody())) {
-
 					for (Reward reward : rewards) {
 						if (bodyB.equals(reward.getBody())) {
 							removeIndex = rewards.indexOf(reward);
 						}
 					}
-
 				}
 
 				if (bodyB.equals(player.getBody())) {
@@ -104,12 +103,25 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
 
 	private void initialiseEnemies() {
 		enemies = new ArrayList<Enemy>();
-		int numberEnemies = 20;
+		int numberEnemies = 10;
 
 		for (int i = 0; i < numberEnemies; i ++) {
 			Enemy currentEnemy = new Enemy();
 			float positionX = (float) Math.random() * Gdx.graphics.getWidth();
 			float positionY = (float) Math.random() * Gdx.graphics.getHeight();
+			float leftBoundary = player.getCentreX() - startRange;
+			float rightBoundary = player.getCentreY() + startRange;
+
+			while (positionX >= leftBoundary && positionX <= rightBoundary) {
+				positionX = (float) (positionX * 1.25);
+			}
+
+			while (positionY <= player.getCentreY() - startRange && positionY >= player.getCentreY() + startRange) {
+				positionY = (float) (positionY * 1.25);
+			}
+			if (i == 3) {
+				log("stop");
+			}
 			currentEnemy.setBody(world, positionX, positionY);
 			currentEnemy.setBaseSprite(new Sprite("sprites/basic_enemy.png"));
 			currentEnemy.setSize(100, 100, 10);
@@ -121,11 +133,25 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
 
 	private void initialiseRewards() {
 		rewards = new ArrayList<Reward>();
-		int numberRewards = 5;
+		int numberRewards = 4;
 		for (int i = 0; i < numberRewards; i ++) {
 			Reward currentReward = new Reward();
 			float positionX = (float) Math.random() * Gdx.graphics.getWidth();
 			float positionY = (float) Math.random() * Gdx.graphics.getHeight();
+			float leftBoundary = player.getCentreX() - startRange;
+			float rightBoundary = player.getCentreY() + startRange;
+
+			while (positionX >= leftBoundary && positionX <= rightBoundary) {
+				positionX = (float) (positionX * 1.25);
+			}
+
+			while (positionY <= player.getCentreY() - startRange && positionY >= player.getCentreY() + startRange) {
+				positionY = (float) (positionY * 1.25);
+			}
+			if (i == 3) {
+				log("stop");
+			}
+
 			currentReward.setBody(world, positionX, positionY);
 			currentReward.setBaseSprite(new Sprite("sprites/basic_reward.png"));
 			currentReward.setSize(100, 100, 10);
@@ -181,6 +207,7 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
 		shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
 		shapeRenderer.line(touchStart.x, touchStart.y, 0, dragPoint.x, dragPoint.y, 0, Color.WHITE, Color.WHITE);
 		shapeRenderer.end();
+
 	}
 
 	@Override
