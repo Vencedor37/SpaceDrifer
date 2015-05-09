@@ -6,19 +6,24 @@ import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Body;
+import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.physics.box2d.Contact;
 import com.badlogic.gdx.physics.box2d.ContactImpulse;
 import com.badlogic.gdx.physics.box2d.ContactListener;
 import com.badlogic.gdx.physics.box2d.Manifold;
 import com.badlogic.gdx.physics.box2d.World;
+import com.badlogic.gdx.graphics.g2d.Sprite;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
 	private SpriteBatch batch;
@@ -37,12 +42,14 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
 	private List<Entity> allEntities;
 	private List<Reward> rewards;
 	private float startRange = 300;
+	Box2DDebugRenderer debugRenderer;
 	
 	@Override
 	public void create () {
 		allEntities = new ArrayList<Entity>();
 		camera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 		world = new World(new Vector2(0,0), true);
+		debugRenderer = new Box2DDebugRenderer();
 		world.setContactListener(new ContactListener() {
 			@Override
 			public void beginContact(Contact contact) {
@@ -85,16 +92,16 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
 			}
 		});
 		player = new Player();
+		player.setBaseSprite(new Sprite(new Texture("sprites/basic_player.png")));
 		player.setBody(world, Gdx.graphics.getWidth() / 2, Gdx.graphics.getHeight() / 2);
-		player.setBaseSprite(new Sprite("sprites/basic_player.png"));
+		player.setLocation(Gdx.graphics.getWidth() / 2, Gdx.graphics.getHeight() / 2);
 		player.setSize(80, 80, 5);
 
 		allEntities.add(player);
 		initialiseEnemies();
 		initialiseRewards();
-		allEntities.addAll(enemies);
-		batch = new SpriteBatch();
 
+		batch = new SpriteBatch();
 		font = new BitmapFont();
 		font.setColor(Color.BLACK);
 		Gdx.input.setInputProcessor(this);
@@ -104,68 +111,111 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
 	private void initialiseEnemies() {
 		enemies = new ArrayList<Enemy>();
 		int numberEnemies = 10;
+		Random random = new Random();
 
 		for (int i = 0; i < numberEnemies; i ++) {
 			Enemy currentEnemy = new Enemy();
-			float positionX = (float) Math.random() * Gdx.graphics.getWidth();
-			float positionY = (float) Math.random() * Gdx.graphics.getHeight();
+			float positionX = 0;
+			float positionY = 0;
 			float leftBoundary = player.getCentreX() - startRange;
-			float rightBoundary = player.getCentreY() + startRange;
+			float rightBoundary = player.getCentreX() + startRange;
+			float topBoundary = player.getCentreY() - startRange;
+			float bottomBoundary = player.getCentreY() + startRange;
+			boolean validLocationFound = false;
 
-			while (positionX >= leftBoundary && positionX <= rightBoundary) {
-				positionX = (float) (positionX * 1.25);
-			}
+			currentEnemy.setBaseSprite(new Sprite(new Texture("sprites/basic_enemy.png")));
 
-			while (positionY <= player.getCentreY() - startRange && positionY >= player.getCentreY() + startRange) {
-				positionY = (float) (positionY * 1.25);
+			while (!validLocationFound) {
+				boolean left = random.nextBoolean();
+				if (left) {
+					positionX = (float) Math.random() * leftBoundary;
+				} else {
+					positionX = (float) (rightBoundary + (Math.random() * Gdx.graphics.getWidth()));
+				}
+
+				boolean top = random.nextBoolean();
+				if (top) {
+					positionY = (float) Math.random() * topBoundary;
+				} else {
+					positionY = (float) (bottomBoundary + (Math.random() * Gdx.graphics.getHeight()));
+				}
+
+				currentEnemy.setBody(world, positionX, positionY);
+				currentEnemy.setSize(100, 100, 10);
+				currentEnemy.setLocation(positionX, positionY);
+
+				validLocationFound = true;
+				for (Entity entity : allEntities) {
+					Rectangle r1 = currentEnemy.getBaseSprite().getBoundingRectangle();
+					Rectangle r2 = entity.getBaseSprite().getBoundingRectangle();
+					if (r1.overlaps(r2)) {
+						validLocationFound = false;
+						break;
+					}
+				}
 			}
-			if (i == 3) {
-				log("stop");
-			}
-			currentEnemy.setBody(world, positionX, positionY);
-			currentEnemy.setBaseSprite(new Sprite("sprites/basic_enemy.png"));
-			currentEnemy.setSize(100, 100, 10);
 
 			currentEnemy.addForce(new Vector2(positionX, positionY).scl(100));
 			enemies.add(currentEnemy);
+			allEntities.add(currentEnemy);
 		}
 	}
 
 	private void initialiseRewards() {
+		Random random = new Random();
 		rewards = new ArrayList<Reward>();
-		int numberRewards = 4;
+		int numberRewards = 8;
 		for (int i = 0; i < numberRewards; i ++) {
 			Reward currentReward = new Reward();
-			float positionX = (float) Math.random() * Gdx.graphics.getWidth();
-			float positionY = (float) Math.random() * Gdx.graphics.getHeight();
+			float positionX = 0;
+			float positionY = 0;
 			float leftBoundary = player.getCentreX() - startRange;
-			float rightBoundary = player.getCentreY() + startRange;
+			float rightBoundary = player.getCentreX() + startRange;
+			float topBoundary = player.getCentreY() - startRange;
+			float bottomBoundary = player.getCentreY() + startRange;
+			boolean validLocationFound = false;
 
-			while (positionX >= leftBoundary && positionX <= rightBoundary) {
-				positionX = (float) (positionX * 1.25);
-			}
+			while (!validLocationFound) {
+				boolean left = random.nextBoolean();
+				if (left) {
+					positionX = (float) Math.random() * leftBoundary + 100;
+				} else {
+					positionX = (float) (rightBoundary + (Math.random() * Gdx.graphics.getWidth())) - 100;
+				}
 
-			while (positionY <= player.getCentreY() - startRange && positionY >= player.getCentreY() + startRange) {
-				positionY = (float) (positionY * 1.25);
-			}
-			if (i == 3) {
-				log("stop");
-			}
+				boolean top = random.nextBoolean();
+				if (top) {
+					positionY = (float) Math.random() * topBoundary + 100;
+				} else {
+					positionY = (float) (bottomBoundary + (Math.random() * Gdx.graphics.getHeight())) - 100;
+				}
+				currentReward.setBaseSprite(new Sprite(new Texture("sprites/basic_reward.png")));
+				currentReward.setBody(world, positionX, positionY);
+				currentReward.setLocation(positionX, positionY);
+				currentReward.setSize(100, 100, 10);
 
-			currentReward.setBody(world, positionX, positionY);
-			currentReward.setBaseSprite(new Sprite("sprites/basic_reward.png"));
-			currentReward.setSize(100, 100, 10);
+				validLocationFound = true;
+				for (Entity entity : allEntities) {
+					Rectangle rect = currentReward.getBaseSprite().getBoundingRectangle();
+					Rectangle otherRect = entity.getBaseSprite().getBoundingRectangle();
+					boolean valid = (!rect.contains(otherRect));
+					if (currentReward.getBaseSprite().getBoundingRectangle().overlaps(entity.getBaseSprite().getBoundingRectangle())) {
+						validLocationFound = false;
+					}
+				}
+			}
 
 			currentReward.addForce(new Vector2(positionX, positionY).scl(180));
 			rewards.add(currentReward);
+			allEntities.add(currentReward);
 		}
 	}
 
 
 	@Override
 	public void render () {
-		processLogic();
 		executeDraw();
+		processLogic();
 	}
 
 	private void executeDraw() {
@@ -184,6 +234,38 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
 		}
 		if (drawLine) {
 			drawToPoint();
+		}
+
+		float leftBoundary = player.getCentreX() - startRange;
+		float rightBoundary = player.getCentreX() + startRange;
+		float topBoundary = player.getCentreY() - startRange;
+		float bottomBoundary = player.getCentreY() + startRange;
+		shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+		shapeRenderer.setColor(Color.BLUE);
+		shapeRenderer.line(leftBoundary, 0, 0, leftBoundary, Gdx.graphics.getHeight(), 0);
+		shapeRenderer.end();
+
+		shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+		shapeRenderer.setColor(Color.YELLOW);
+		shapeRenderer.line(rightBoundary, 0, 0, rightBoundary, Gdx.graphics.getHeight(), 0);
+		shapeRenderer.end();
+
+		shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+		shapeRenderer.setColor(Color.RED);
+		shapeRenderer.line(0, topBoundary, 0, Gdx.graphics.getWidth(), topBoundary, 0);
+		shapeRenderer.end();
+
+		shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+		shapeRenderer.setColor(Color.WHITE);
+		shapeRenderer.line(0, bottomBoundary, 0, Gdx.graphics.getWidth(), bottomBoundary, 0);
+		shapeRenderer.end();
+
+		for (Entity e : allEntities) {
+			shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+			shapeRenderer.setColor(Color.CYAN);
+			Rectangle r = e.getBaseSprite().getBoundingRectangle();
+			shapeRenderer.box(r.x, r.y, 0, r.width, r.height, 0);
+			shapeRenderer.end();
 		}
 	}
 

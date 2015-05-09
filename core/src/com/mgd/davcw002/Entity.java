@@ -1,15 +1,14 @@
 package com.mgd.davcw002;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.*;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Body;
 import com.badlogic.gdx.physics.box2d.BodyDef;
-import com.badlogic.gdx.physics.box2d.EdgeShape;
-import com.badlogic.gdx.physics.box2d.Fixture;
 import com.badlogic.gdx.physics.box2d.FixtureDef;
 import com.badlogic.gdx.physics.box2d.PolygonShape;
 import com.badlogic.gdx.physics.box2d.World;
+import com.badlogic.gdx.graphics.g2d.Sprite;
 
 import java.util.List;
 
@@ -37,13 +36,12 @@ public class Entity {
     }
 
     public void setLocation(float x, float y) {
-        baseSprite.x = x;
-        baseSprite.y = y;
+        baseSprite.setX(x);
+        baseSprite.setY(y);
     }
 
     public void setSize(int width, int height, int padding) {
-        baseSprite.width = width;
-        baseSprite.height = height;
+        baseSprite.setSize(width, height);
         PolygonShape entityShape = new PolygonShape();
         entityShape.setAsBox(width/2 - padding, height/2 - padding);
         FixtureDef fixtureDef = new FixtureDef();
@@ -53,16 +51,12 @@ public class Entity {
     }
 
     public void render(SpriteBatch batch) {
-        baseSprite.render(batch);
+        batch.begin();
+        batch.draw(baseSprite, baseSprite.getX(), baseSprite.getY(), baseSprite.getWidth(), baseSprite.getHeight());
+        batch.end();
     }
 
-    public float getRelativeCentreX() {
-        return baseSprite.width/2;
-    }
 
-    public float getRelativeCentreY() {
-        return baseSprite.height/2;
-    }
 
     public float getCentreX() {
         return (getRight() + getLeft())/2;
@@ -73,28 +67,24 @@ public class Entity {
     }
 
     public float getLeft() {
-        return baseSprite.x;
+        return baseSprite.getX();
     }
 
     public float getRight() {
-        return baseSprite.x + baseSprite.width;
+        return baseSprite.getX() + baseSprite.getWidth();
     }
 
     public float getTop() {
-        return baseSprite.y;
+        return baseSprite.getY();
     }
 
     public float getBottom() {
-        return baseSprite.y + baseSprite.height;
-    }
-
-    public Vector2 getRelativeCentre() {
-        return new Vector2(getRelativeCentreX(), getRelativeCentreY());
+        return baseSprite.getY() + baseSprite.getHeight();
     }
 
     public void updateLocation() {
-        baseSprite.x = body.getPosition().x;
-        baseSprite.y = body.getPosition().y;
+        baseSprite.setX(body.getPosition().x);
+        baseSprite.setY(body.getPosition().y);
         checkBoundaries();
     }
 
@@ -118,11 +108,11 @@ public class Entity {
         }
 
         if (right > Gdx.graphics.getWidth()) {
-            setLocation(Gdx.graphics.getWidth() - baseSprite.width - 1, top);
+            setLocation(Gdx.graphics.getWidth() - baseSprite.getWidth() - 1, top);
             reverseAxis(true);
         }
         if (bottom > Gdx.graphics.getHeight()) {
-            setLocation(left, Gdx.graphics.getHeight() - 1 - baseSprite.height);
+            setLocation(left, Gdx.graphics.getHeight() - 1 - baseSprite.getHeight());
             reverseAxis(false);
         }
         if (top < 0) {

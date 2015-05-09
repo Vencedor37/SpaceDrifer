@@ -7,7 +7,7 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 /**
  * Created by Campbell on 7/05/2015.
  */
-public class Sprite {
+public class MySprite {
     private Texture texture;
     public float x = 0;
     public float y = 0;
@@ -15,7 +15,7 @@ public class Sprite {
     public float width = 10;
     public float height = 10;
 
-    public Sprite(String imgPath) {
+    public MySprite(String imgPath) {
         texture = new Texture(imgPath);
     }
 
@@ -24,4 +24,5 @@ public class Sprite {
         batch.draw(texture, x, y, width, height);
         batch.end();
     }
+
 }
