@@ -9,6 +9,8 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.freetype.FreeType;
+import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
@@ -64,9 +66,22 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
     private int health = MAXHEALTH;
     private int currentFuel = MAX_FUEL;
     private Timer timer = new Timer();
+    private FreeTypeFontGenerator fontGenerator;
+    private FreeTypeFontGenerator.FreeTypeFontParameter fontParamter;
+    private BitmapFont uiFont;
+
+    public MyGdxGame() {
+
+    }
 
     @Override
     public void create() {
+        fontGenerator = new FreeTypeFontGenerator(Gdx.files.internal("MalancheCrunch.ttf"));
+        fontParamter = new FreeTypeFontGenerator.FreeTypeFontParameter();
+        fontParamter.flip = true;
+        fontParamter.size = 32;
+        uiFont = fontGenerator.generateFont(fontParamter);
+        fontGenerator.dispose();
         allEntities = new ArrayList<Entity>();
         entitiesToDestroy = new ArrayList<Entity>();
         camera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
@@ -109,7 +124,7 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
         batch = new SpriteBatch();
         //font = new BitmapFont(Gdx.files.internal("font.font"), Gdx.files.internal("font.png"), true);
         font = new BitmapFont(true);
-        font.setColor(Color.WHITE);
+        uiFont.setColor(Color.WHITE);
         Gdx.input.setInputProcessor(this);
         shapeRenderer = new ShapeRenderer();
     }
@@ -367,7 +382,8 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
         // draw score
         String scoreStr = "score: " + score;
         batch.begin();
-        font.draw(batch, scoreStr, Gdx.graphics.getWidth() / 2, 20);
+
+        uiFont.draw(batch, scoreStr, Gdx.graphics.getWidth() / 2, 20);
         batch.end();
 
         if (isGameOver()) {
@@ -376,8 +392,8 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
             String restartStr = "Touch Screen to Restart";
 
             batch.begin();
-            font.draw(batch, gameOverStr, Gdx.graphics.getWidth() / 2 - 15, 60);
-            font.draw(batch, restartStr, Gdx.graphics.getWidth() / 2 - 50, 90);
+            uiFont.draw(batch, gameOverStr, Gdx.graphics.getWidth() / 2 - 15, 60);
+            uiFont.draw(batch, restartStr, Gdx.graphics.getWidth() / 2 - 50, 90);
             batch.end();
         }
 
