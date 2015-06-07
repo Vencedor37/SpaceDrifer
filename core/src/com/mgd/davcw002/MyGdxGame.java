@@ -22,6 +22,7 @@ import com.badlogic.gdx.physics.box2d.ContactListener;
 import com.badlogic.gdx.physics.box2d.Manifold;
 import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.graphics.g2d.Sprite;
+import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,6 +41,7 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
     private final int SCORE_TIMER = 1000;
     private int score = 0;
 
+    private TextButton startButton;
     private SpriteBatch batch;
     private Player player;
     private List<Enemy> enemies;
@@ -81,7 +83,6 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
         fontParamter.flip = true;
         fontParamter.size = 32;
         uiFont = fontGenerator.generateFont(fontParamter);
-        fontGenerator.dispose();
         allEntities = new ArrayList<Entity>();
         entitiesToDestroy = new ArrayList<Entity>();
         camera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
@@ -127,6 +128,17 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
         uiFont.setColor(Color.WHITE);
         Gdx.input.setInputProcessor(this);
         shapeRenderer = new ShapeRenderer();
+        UserInterfaceAssets uiAssets = new UserInterfaceAssets(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+
+        TextButton.TextButtonStyle buttonStyle = new TextButton.TextButtonStyle(
+            uiAssets.startButtonUp,
+            uiAssets.startButtonDown,
+            uiAssets.startButtonChecked,
+            font
+        );
+
+        startButton = new TextButton("Start", new TextButton.TextButtonStyle(buttonStyle));
+        startButton.setPosition(Gdx.graphics.getWidth()/2 - startButton.getWidth()/2, Gdx.graphics.getHeight()/2 - startButton.getHeight()/2);
     }
 
     private void increaseScore() {
