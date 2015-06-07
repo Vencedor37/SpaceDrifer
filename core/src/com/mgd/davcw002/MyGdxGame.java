@@ -9,6 +9,7 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeType;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
@@ -23,6 +24,7 @@ import com.badlogic.gdx.physics.box2d.Manifold;
 import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
+import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -60,7 +62,6 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
     private List<Reward> rewards;
     private float startRange = 300;
     private boolean debugMode = false;
-    Box2DDebugRenderer debugRenderer;
     private float leftEdge = 0;
     private float rightEdge = 0;
     private float topEdge = 0;
@@ -71,10 +72,8 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
     private FreeTypeFontGenerator fontGenerator;
     private FreeTypeFontGenerator.FreeTypeFontParameter fontParamter;
     private BitmapFont uiFont;
-
-    public MyGdxGame() {
-
-    }
+    private TextureRegion textureRegion;
+    private Texture spaceTexture;
 
     @Override
     public void create() {
@@ -90,6 +89,9 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
         rightEdge = Gdx.graphics.getWidth() - 10;
         topEdge = 0;
         bottomEdge = Gdx.graphics.getHeight() - 10;
+        spaceTexture = new Texture(Gdx.files.internal("sprites/space_texture1.png"));
+        spaceTexture.setWrap(Texture.TextureWrap.Repeat, Texture.TextureWrap.Repeat);
+        textureRegion = new TextureRegion(spaceTexture);
 
         world = new World(new Vector2(0, 0), true);
         world.setContactListener(new ContactListener() {
@@ -221,7 +223,7 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
 
         for (int i = 0; i < numberEnemies; i++) {
             Enemy currentEnemy = new Enemy();
-            currentEnemy.setBaseSprite(new Sprite(new Texture("sprites/basic_enemy.png")));
+            currentEnemy.setBaseSprite(new Sprite(new Texture("sprites/enemy1.png")));
             findSpawnPoint(currentEnemy);
             enemies.add(currentEnemy);
             allEntities.add(currentEnemy);
@@ -253,7 +255,14 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
                 positionY = (float) (-40 + bottomBoundary + (Math.random() * (Gdx.graphics.getHeight() - bottomBoundary)));
             }
 
-            entity.setSize(100, 100);
+            if (entity instanceof Reward) {
+                Reward rEntity = (Reward) entity;
+                rEntity.setSize(60, 100);
+            }
+            else {
+                entity.setSize(100, 100);
+            }
+
             entity.setLocation(positionX, positionY);
 
             validLocationFound = true;
@@ -280,13 +289,15 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
             String spriteLocation;
             if (i % 3 == 0) {
                 rewardType = Reward.TYPES.FUEL;
-                spriteLocation = "sprites/basic_fuel.png";
+                spriteLocation = "sprites/fuel.png";
             } else {
                 rewardType = Reward.TYPES.HEALTH;
-                spriteLocation = "sprites/basic_reward.png";
+                spriteLocation = "sprites/health.png";
             }
             Reward currentReward = new Reward(rewardType);
-            currentReward.setBaseSprite(new Sprite(new Texture(spriteLocation)));
+            Sprite baseSprite = new Sprite(new Texture(spriteLocation));
+            baseSprite.flip(false, true);
+            currentReward.setBaseSprite(baseSprite);
             findSpawnPoint(currentReward);
             rewards.add(currentReward);
             allEntities.add(currentReward);
@@ -323,6 +334,15 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
         float rightBoundary = player.getCentreX() + startRange;
         float topBoundary = player.getCentreY() - startRange;
         float bottomBoundary = player.getCentreY() + startRange;
+
+        batch.begin();
+        batch.draw(spaceTexture,
+                0, 0,
+                spaceTexture.getWidth(), spaceTexture.getHeight(),
+                textureRegion.getRegionX(), textureRegion.getRegionY(),
+                textureRegion.getRegionWidth(), textureRegion.getRegionHeight()
+        );
+        batch.end();
 
         if (debugMode) {
             shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
@@ -393,22 +413,29 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
 
         // draw score
         String scoreStr = "score: " + score;
+        float textWidth = Helpers.getTextWidth(uiFont, scoreStr);
+        float drawPoint = Gdx.graphics.getWidth() / 2 - textWidth/2;
         batch.begin();
 
-        uiFont.draw(batch, scoreStr, Gdx.graphics.getWidth() / 2, 20);
+        uiFont.draw(batch, scoreStr, drawPoint, 20);
         batch.end();
 
         if (isGameOver()) {
             // draw game over message
-            String gameOverStr = "Game Over";
-            String restartStr = "Touch Screen to Restart";
+            String[] messages = new String[2];
+            messages[0] = "Game Over";
+            messages[1] = "Touch Screen to Restart";
 
-            batch.begin();
-            uiFont.draw(batch, gameOverStr, Gdx.graphics.getWidth() / 2 - 15, 60);
-            uiFont.draw(batch, restartStr, Gdx.graphics.getWidth() / 2 - 50, 90);
-            batch.end();
+            int newLine = 1;
+            for (String message : messages) {
+                textWidth = Helpers.getTextWidth(uiFont, message);
+                drawPoint = Gdx.graphics.getWidth()/2 - textWidth/2;
+                batch.begin();
+                uiFont.draw(batch, message, drawPoint, (Helpers.getTextHeight(uiFont, message) * 3) * newLine);
+                batch.end();
+                newLine ++;
+            }
         }
-
     }
 
     private void processLogic() {
@@ -533,7 +560,9 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
         allEntities = new ArrayList<Entity>();
         entitiesToDestroy = new ArrayList<Entity>();
         player = new Player();
-        player.setBaseSprite(new Sprite(new Texture("sprites/basic_player.png")));
+        Sprite playerBaseSprite = new Sprite(new Texture("sprites/player1.png"));
+        playerBaseSprite.flip(false, true);
+        player.setBaseSprite(playerBaseSprite);
         player.setBody(world, Gdx.graphics.getWidth() / 2, Gdx.graphics.getHeight() / 2);
         player.setLocation(Gdx.graphics.getWidth() / 2, Gdx.graphics.getHeight() / 2);
         player.setSize(80, 80);
