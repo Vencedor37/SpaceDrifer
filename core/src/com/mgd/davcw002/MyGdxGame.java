@@ -10,13 +10,11 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.graphics.g2d.freetype.FreeType;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Body;
-import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.physics.box2d.Contact;
 import com.badlogic.gdx.physics.box2d.ContactImpulse;
 import com.badlogic.gdx.physics.box2d.ContactListener;
@@ -24,7 +22,6 @@ import com.badlogic.gdx.physics.box2d.Manifold;
 import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
-import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,9 +37,15 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
     private final int FUEL_BONUS = 150;
     private final int FUEL_USE = 50;
     private final int HEALTH_TIMER = 150;
+    private final int REWARD_TIMER = 100;
     private final int SCORE_TIMER = 1000;
-    private int score = 0;
+    private enum GameState {
+        START, GAMEOVER, PLAYING
+    }
+    private GameState gameState = GameState.START;
 
+    private boolean addReward = false;
+    private int score = 0;
     private TextButton startButton;
     private SpriteBatch batch;
     private Player player;
@@ -72,16 +75,21 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
     private FreeTypeFontGenerator fontGenerator;
     private FreeTypeFontGenerator.FreeTypeFontParameter fontParamter;
     private BitmapFont uiFont;
+    private BitmapFont buttonFont;
     private TextureRegion textureRegion;
     private Texture spaceTexture;
 
     @Override
     public void create() {
-        fontGenerator = new FreeTypeFontGenerator(Gdx.files.internal("MalancheCrunch.ttf"));
+        fontGenerator = new FreeTypeFontGenerator(Gdx.files.internal("Sumana-Bold.ttf"));
         fontParamter = new FreeTypeFontGenerator.FreeTypeFontParameter();
         fontParamter.flip = true;
         fontParamter.size = 32;
+        FreeTypeFontGenerator.FreeTypeFontParameter buttonFontParameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
+        buttonFontParameter.flip = true;
+        buttonFontParameter.size = 80;
         uiFont = fontGenerator.generateFont(fontParamter);
+        buttonFont = fontGenerator.generateFont(buttonFontParameter);
         allEntities = new ArrayList<Entity>();
         entitiesToDestroy = new ArrayList<Entity>();
         camera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
@@ -122,7 +130,7 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
 
             }
         });
-        startGame();
+        prepareGame();
 
         batch = new SpriteBatch();
         //font = new BitmapFont(Gdx.files.internal("font.font"), Gdx.files.internal("font.png"), true);
@@ -136,15 +144,15 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
             uiAssets.startButtonUp,
             uiAssets.startButtonDown,
             uiAssets.startButtonChecked,
-            font
+            buttonFont
         );
 
-        startButton = new TextButton("Start", new TextButton.TextButtonStyle(buttonStyle));
+        startButton = new TextButton("Play", new TextButton.TextButtonStyle(buttonStyle));
         startButton.setPosition(Gdx.graphics.getWidth()/2 - startButton.getWidth()/2, Gdx.graphics.getHeight()/2 - startButton.getHeight()/2);
     }
 
     private void increaseScore() {
-        if (!isGameOver()) {
+        if (isPlaying()) {
             score++;
             timer.schedule(new TimerTask() {
                 @Override
@@ -179,7 +187,7 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
             if (health > 0) {
                 health = health + HEALTHBONUS;
                 if (health > MAXHEALTH) {
-                    int scoreBonus = health - MAXHEALTH;
+                    int scoreBonus = (health - MAXHEALTH)/2;
                     health = MAXHEALTH;
                     score += scoreBonus;
                 }
@@ -187,7 +195,7 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
         } else if (reward.getType() == Reward.TYPES.FUEL) {
             currentFuel = currentFuel + FUEL_BONUS;
             if (currentFuel > MAX_FUEL) {
-                int scoreBonus = currentFuel - MAX_FUEL;
+                int scoreBonus = (currentFuel - MAX_FUEL)/2;
                 currentFuel = MAX_FUEL;
                 score += scoreBonus;
             }
@@ -205,7 +213,7 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
     }
 
     private void reduceHealth() {
-        if (!isGameOver()) {
+        if (isPlaying()) {
             health = health - 1;
             timer.schedule(new TimerTask() {
                 @Override
@@ -229,6 +237,7 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
             allEntities.add(currentEnemy);
         }
     }
+
 
     private void findSpawnPoint(Entity entity) {
         Random random = new Random();
@@ -302,6 +311,46 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
             rewards.add(currentReward);
             allEntities.add(currentReward);
         }
+        timer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                readyForReward();
+            }
+        }, REWARD_TIMER);
+    }
+
+    private void readyForReward() {
+        addReward = true;
+    }
+
+    private void addReward() {
+        if (isPlaying()) {
+            Random random = new Random();
+            Reward.TYPES rewardType;
+            String spriteLocation;
+            if (random.nextBoolean()) {
+                rewardType = Reward.TYPES.FUEL;
+                spriteLocation = "sprites/fuel.png";
+            } else {
+                rewardType = Reward.TYPES.HEALTH;
+                spriteLocation = "sprites/health.png";
+            }
+            Reward currentReward = new Reward(rewardType);
+            Sprite baseSprite = new Sprite(new Texture(spriteLocation));
+            baseSprite.setFlip(false, true);
+            currentReward.setBaseSprite(baseSprite);
+            findSpawnPoint(currentReward);
+            rewards.add(currentReward);
+            allEntities.add(currentReward);
+
+            addReward = false;
+            timer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    readyForReward();
+                }
+            }, REWARD_TIMER);
+        }
     }
 
 
@@ -337,10 +386,10 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
 
         batch.begin();
         batch.draw(spaceTexture,
-                0, 0,
-                spaceTexture.getWidth(), spaceTexture.getHeight(),
-                textureRegion.getRegionX(), textureRegion.getRegionY(),
-                textureRegion.getRegionWidth(), textureRegion.getRegionHeight()
+            0, 0,
+            spaceTexture.getWidth(), spaceTexture.getHeight(),
+            textureRegion.getRegionX(), textureRegion.getRegionY(),
+            textureRegion.getRegionWidth(), textureRegion.getRegionHeight()
         );
         batch.end();
 
@@ -402,7 +451,7 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
         // draw health
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
         shapeRenderer.setColor(Color.GREEN);
-        shapeRenderer.box(leftEdge + 50, topEdge + 50, 0, health, 50, 0);
+        shapeRenderer.box(leftEdge + 50, topEdge + 50, 0, health + 50, 50, 0);
         shapeRenderer.end();
 
         // draw fuel
@@ -412,7 +461,7 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
         shapeRenderer.end();
 
         // draw score
-        String scoreStr = "score: " + score;
+        String scoreStr = "health: " + health;
         float textWidth = Helpers.getTextWidth(uiFont, scoreStr);
         float drawPoint = Gdx.graphics.getWidth() / 2 - textWidth/2;
         batch.begin();
@@ -420,11 +469,10 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
         uiFont.draw(batch, scoreStr, drawPoint, 20);
         batch.end();
 
-        if (isGameOver()) {
+        if (isStart()) {
             // draw game over message
-            String[] messages = new String[2];
-            messages[0] = "Game Over";
-            messages[1] = "Touch Screen to Restart";
+            String[] messages = new String[1];
+            messages[0] = "Touch Screen to Start Game";
 
             int newLine = 1;
             for (String message : messages) {
@@ -435,35 +483,65 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
                 batch.end();
                 newLine ++;
             }
+            batch.begin();
+            //startButton.draw(batch, 1.0f);
+            batch.end();
+        }
+
+        if (isGameOver()) {
+            // draw game over message
+            String[] messages = new String[3];
+            messages[0] = "Game Over";
+            messages[1] = "Touch Screen to Restart";
+            messages[2] = "health: " + health;
+
+            int newLine = 1;
+            for (String message : messages) {
+                textWidth = Helpers.getTextWidth(uiFont, message);
+                drawPoint = Gdx.graphics.getWidth()/2 - textWidth/2;
+                batch.begin();
+                uiFont.draw(batch, message, drawPoint, (Helpers.getTextHeight(uiFont, message) * 3) * newLine);
+                batch.end();
+                newLine ++;
+            }
+            batch.begin();
+            //startButton.draw(batch, 1.0f);
+            batch.end();
         }
     }
 
     private void processLogic() {
-        if (health > 0) {
-            if (forceToApply != null) {
-                if (currentFuel >= FUEL_USE) {
-                    player.getBody().applyForceToCenter(forceToApply, true);
-                    forceToApply = null;
-                    currentFuel = currentFuel - FUEL_USE;
-                    if (currentFuel < 0) {
-                        currentFuel = 0;
+        if (isPlaying()) {
+            if (health > 0) {
+                if (addReward) {
+                    addReward();
+                }
+                if (forceToApply != null) {
+                    if (currentFuel >= FUEL_USE) {
+                        player.getBody().applyForceToCenter(forceToApply, true);
+                        forceToApply = null;
+                        currentFuel = currentFuel - FUEL_USE;
+                        if (currentFuel < 0) {
+                            currentFuel = 0;
+                        }
                     }
                 }
-            }
 
-            destroyQueuedEntities();
-            world.step(Gdx.graphics.getDeltaTime(), 6, 2);
-            player.updateLocation();
-            for (Enemy enemy : enemies) {
-                enemy.updateLocation();
+                destroyQueuedEntities();
+                world.step(Gdx.graphics.getDeltaTime(), 6, 2);
+                player.updateLocation();
+                for (Enemy enemy : enemies) {
+                    enemy.updateLocation();
+                }
+                for (Reward reward : rewards) {
+                    reward.updateLocation();
+                }
+            } else {
+                entitiesToDestroy.addAll(allEntities);
+                allEntities.clear();
+                destroyQueuedEntities();
+                gameState = GameState.GAMEOVER;
             }
-            for (Reward reward : rewards) {
-                reward.updateLocation();
-            }
-        } else {
-            entitiesToDestroy.addAll(allEntities);
-            allEntities.clear();
-            destroyQueuedEntities();
         }
     }
 
@@ -497,7 +575,7 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
 
     @Override
     public boolean touchDown(int screenX, int screenY, int pointer, int button) {
-        if (!isGameOver()) {
+        if (isPlaying()) {
             if (touchStart == null) {
                 touchStart = new Vector2(screenX, screenY);
                 dragPoint = new Vector2(screenX, screenY);
@@ -515,7 +593,7 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
 
     @Override
     public boolean touchUp(int screenX, int screenY, int pointer, int button) {
-        if (!isGameOver()) {
+        if (isPlaying()) {
             touchEnd = new Vector2(screenX, screenY);
             if (touchStart != null) {
                 forceToApply = touchStart.sub(touchEnd).scl(30);
@@ -524,7 +602,10 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
             touchStart = null;
             dragPoint = null;
             drawLine = false;
-        } else {
+        } else if (isGameOver()) {
+            prepareGame();
+            startGame();
+        } else if (isStart()) {
             startGame();
         }
 
@@ -554,6 +635,12 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
     }
 
     public void startGame() {
+        gameState = GameState.PLAYING;
+        reduceHealth();
+        increaseScore();
+    }
+
+    public void prepareGame() {
         currentFuel = MAX_FUEL;
         health = MAXHEALTH;
         score = 0;
@@ -571,8 +658,6 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
         allEntities.add(player);
         initialiseEnemies();
         initialiseRewards();
-        reduceHealth();
-        increaseScore();
     }
 
     @Override
@@ -583,6 +668,14 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
     }
 
     private boolean isGameOver() {
-        return (health <= 0);
+        return (gameState.equals(GameState.GAMEOVER));
+    }
+
+    private boolean isPlaying() {
+        return (gameState.equals(GameState.PLAYING));
+    }
+
+    private boolean isStart() {
+        return (gameState.equals(GameState.START));
     }
 }

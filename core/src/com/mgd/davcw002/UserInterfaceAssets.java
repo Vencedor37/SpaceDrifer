@@ -14,8 +14,14 @@ public class UserInterfaceAssets {
   public SpriteDrawable startButtonChecked;
 
   public UserInterfaceAssets(float screenWidth, float screenHeight) {
-    startButtonUp = new SpriteDrawable(new Sprite(new Texture("sprites/button_up.png")));
-    startButtonDown = new SpriteDrawable(new Sprite(new Texture("sprites/button_down.png")));
-    startButtonChecked = new SpriteDrawable(new Sprite(new Texture("sprites/button_down_checked.png")));
+    Sprite startButtonUpSprite = new Sprite(new Texture("sprites/button_up.png"));
+    Sprite startButtonDownSprite = new Sprite(new Texture("sprites/button_down.png"));
+    Sprite startButtonCheckedSprite = new Sprite(new Texture("sprites/button_checked.png"));
+    startButtonUpSprite.setFlip(false, true);
+    startButtonCheckedSprite.setFlip(false, true);
+    startButtonDownSprite.setFlip(false, true);
+    startButtonUp = new SpriteDrawable(startButtonUpSprite);
+    startButtonDown = new SpriteDrawable(startButtonDownSprite);
+    startButtonChecked = new SpriteDrawable(startButtonCheckedSprite);
   }
 }
